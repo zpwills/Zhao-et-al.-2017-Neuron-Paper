@@ -54,8 +54,6 @@ for file = files'
     end;
 
 
-    %Demean Data (to do: high pass filter?)
-    %deMeanedRhoA = bsxfun(@rdivide,RhoA,nanmean(RhoA));
     deMeanedRhoA = RhoA;
     deMeanedRCaMP = bsxfun(@rdivide,RCaMP,nanmean(RCaMP));
     sdRhoA = nanstd(deMeanedRhoA);
@@ -65,22 +63,9 @@ for file = files'
         sensorData = deMeanedRCaMP(:,sensor); % grab the sensor
         n = 400; % average every n values
 
-        % arbitrary data
         b = arrayfun(@(i) nanmean(sensorData(i:i+n-1)),1:n:length(sensorData)-n+1)'; % the averaged vector
-        %findpeaks(sensorData, 'MinPeakProminence',.35)
-        %pause
-        %means = [];
-        %for i = 1:length(b);
-        %means = [means; repmat(b(i),n,1)];
-        %end;
-        %means = [means; repmat(means(end),length(sensorData)-length(means),1)];
-        %means = medfilt1(sensorData,1);
-        %means = repmat(nanmean(sensorData([1:endmeanCalc],1)), 1,length(means))';
         means = sgolayfilt(sensorData,1,121);
-        %movavg = tsmovavg(sensorData,'s',100,1);
         tsig = sensorData >= (nSDs)*sdRCaMP(sensor) + means;
-        %mean(sensorData([1:endmeanCalc],1))
-
         dsig = diff(tsig);
         startIndex = find(dsig > 0);
         endIndex = find(dsig < 0)-1;
@@ -136,15 +121,12 @@ for file = files'
         hold on
         peakAbsTimes = cellfun(@(v) v(1), peakData(:,1));
         peakAbsMags = cellfun(@(v) v(1), peakData(:,2))
-        %plot(peakAbsTimes, repmat((nSDs*sdRCaMP(sensor) + mean(sensorData(sensor))),length(peakAbsTimes),1), 'co', 'MarkerSize', 1.3)
         plot(peakAbsTimes, peakAbsMags, 'co', 'MarkerSize', 1.3)
         plot(absTime,(nSDs)*sdRCaMP(sensor) + means, '--');
         ylabel(sensor);
         set(gca,'FontSize',3) 
         axis([0,max(data(:,1)) + 10,0,4]);
-        %title(sprintf('RCaMP Sensor %d', sensor));
-        %ylabel('Delta F / F');
-        %xlabel('Absolute Time (s)');
+
         clear peakData
     end
     fig = gcf
@@ -154,7 +136,6 @@ for file = files'
     paperPosition = [.5 .5 paperSize - .5];
     set(fig,'PaperPosition', paperPosition);
     set(fig,'PaperUnits',paperUnits);
-    % set(gca, 'FontSize', fsz, 'LineWidth', alw); %<- Set properties
     [~,filename,~] = fileparts(file.name);
     cd(folder_out_name);
     save(filename, 'outputData');
@@ -162,11 +143,6 @@ for file = files'
     figure_title = sprintf('%s.eps', filename);
     saveas(gcf,[figure_title], 'epsc' )
     close all    
-
-    %Write data to directory:
-    %create the directory dynamically. check if ~ exists, otherwise create
-    %loop through all files in datain dir.
-
     nPeaksRCaMP = nPeaksRCaMP';
     excludedPeaks = excludedPeaks';
 
